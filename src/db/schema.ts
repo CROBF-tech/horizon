@@ -13,6 +13,10 @@ export const users = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     name: text('name').notNull(),
     email: text('email').notNull(),
+    passwordHash: text('password_hash').notNull(),
+    role: text('role', { enum: ['admin'] })
+      .notNull()
+      .default('admin'),
     avatarUrl: text('avatar_url'),
     bio: text('bio'),
     createdAt: integer('created_at', { mode: 'timestamp' })
