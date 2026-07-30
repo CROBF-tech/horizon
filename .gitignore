@@ -17,6 +17,9 @@ pnpm-debug.log*
 .env
 .env.production
 
+# drizzle generated migrations cache (committed; ignore local metadata)
+drizzle/meta/
+
 # macOS-specific files
 .DS_Store
 
