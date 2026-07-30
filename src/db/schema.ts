@@ -7,23 +7,22 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core';
 
-export const users = sqliteTable(
-  'users',
+/**
+ * Authentication for the CROBF site.
+ * Holds exactly ONE admin row, seeded from env vars (ADMIN_USERNAME / ADMIN_PASSWORD_HASH).
+ * Not a multi-user system; readers have no account.
+ */
+export const adminUsers = sqliteTable(
+  'admin_users',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    name: text('name').notNull(),
-    email: text('email').notNull(),
+    username: text('username').notNull(),
     passwordHash: text('password_hash').notNull(),
-    role: text('role', { enum: ['admin'] })
-      .notNull()
-      .default('admin'),
-    avatarUrl: text('avatar_url'),
-    bio: text('bio'),
     createdAt: integer('created_at', { mode: 'timestamp' })
       .notNull()
       .default(sql`(unixepoch())`),
   },
-  (table) => [uniqueIndex('users_email_unique').on(table.email)],
+  (table) => [uniqueIndex('admin_users_username_unique').on(table.username)],
 );
 
 export const topics = sqliteTable(
@@ -58,31 +57,32 @@ export const tags = sqliteTable(
   (table) => [uniqueIndex('tags_slug_unique').on(table.slug)],
 );
 
-export const posts = sqliteTable('posts', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  slug: text('slug').notNull(),
-  title: text('title').notNull(),
-  excerpt: text('excerpt'),
-  content: text('content').notNull(),
-  coverImageUrl: text('cover_image_url'),
-  status: text('status', { enum: ['draft', 'published', 'archived'] })
-    .notNull()
-    .default('draft'),
-  topicId: integer('topic_id')
-    .notNull()
-    .references(() => topics.id, { onDelete: 'restrict' }),
-  authorId: integer('author_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'restrict' }),
-  readingTimeMinutes: integer('reading_time_minutes'),
-  publishedAt: integer('published_at', { mode: 'timestamp' }),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .notNull()
-    .default(sql`(unixepoch())`),
-  updatedAt: integer('updated_at', { mode: 'timestamp' })
-    .notNull()
-    .default(sql`(unixepoch())`),
-}, (table) => [uniqueIndex('posts_slug_unique').on(table.slug)]);
+export const posts = sqliteTable(
+  'posts',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    slug: text('slug').notNull(),
+    title: text('title').notNull(),
+    excerpt: text('excerpt'),
+    content: text('content').notNull(),
+    coverImageUrl: text('cover_image_url'),
+    status: text('status', { enum: ['draft', 'published', 'archived'] })
+      .notNull()
+      .default('draft'),
+    topicId: integer('topic_id')
+      .notNull()
+      .references(() => topics.id, { onDelete: 'restrict' }),
+    readingTimeMinutes: integer('reading_time_minutes'),
+    publishedAt: integer('published_at', { mode: 'timestamp' }),
+    createdAt: integer('created_at', { mode: 'timestamp' })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer('updated_at', { mode: 'timestamp' })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [uniqueIndex('posts_slug_unique').on(table.slug)],
+);
 
 export const postTags = sqliteTable(
   'post_tags',
@@ -101,15 +101,7 @@ export const topicsRelations = relations(topics, ({ many }) => ({
   posts: many(posts),
 }));
 
-export const usersRelations = relations(users, ({ many }) => ({
-  posts: many(posts),
-}));
-
 export const postsRelations = relations(posts, ({ one, many }) => ({
-  author: one(users, {
-    fields: [posts.authorId],
-    references: [users.id],
-  }),
   topic: one(topics, {
     fields: [posts.topicId],
     references: [topics.id],
@@ -132,8 +124,8 @@ export const postTagsRelations = relations(postTags, ({ one }) => ({
   }),
 }));
 
-export type User = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert;
+export type AdminUser = typeof adminUsers.$inferSelect;
+export type NewAdminUser = typeof adminUsers.$inferInsert;
 export type Topic = typeof topics.$inferSelect;
 export type NewTopic = typeof topics.$inferInsert;
 export type Tag = typeof tags.$inferSelect;
